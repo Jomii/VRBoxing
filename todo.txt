@@ -1,0 +1,13 @@
+- √ next target preview
+- √ hand models
+- increase hand size to prevent controllers crashing together irl
+- steps 1s -> 0.5s interval? 1 hit per second feels slow
+- better combos (symmetry and try general combos)
+- score system
+- pause
+- button to return to menu
+
+notes:
+lack of hand rotation visibility sucks
+gameplay felt slow, annoying that you have to react to targets, because you dont know what is coming next so its impossible to set up combos that feel good
+it was noticeable that the targets were attempting to fit the song, but they felt unsynced which was dissapointin - maybe make better general combos and play song in bg OR make in sync levels
