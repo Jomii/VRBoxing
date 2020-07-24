@@ -12,12 +12,23 @@ public class Hand : MonoBehaviour
       }
     }
 
-    void OnTriggerEnter(Collider other) {
-      GameObject target = other.gameObject;
+    void OnCollisionEnter(Collision collision) {
+      GameObject target = collision.gameObject;
 
-      if (target != null && hitTimer <= 0) {
+      if (target != null && target.tag != "Player" && hitTimer <= 0) {
+        Debug.Log("hand collision detected with: " + target.name + " with vel: " + collision.relativeVelocity.magnitude);
         hitTimer = 0.75f;
-        target.SetActive(false);
+
+        // TODO: Connect hit with target spawn
+        TargetSpawn targetSpawn = target.GetComponentInParent<TargetSpawn>();
+        targetSpawn.MoveTargets();
+
+        if (collision.relativeVelocity.magnitude > 1.75f) {
+          Debug.Log("Big hit!");
+        }
+        // target.SetActive(false);
+        // Destroy(target);
       }
+
     }
 }
