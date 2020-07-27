@@ -42,10 +42,11 @@ public class TargetSpawn : MonoBehaviour
     Transform leftEnd;
     List<GameObject> movingTargets;
     List<string> moveList = new List<string>{
-      LS, RS, LH, RS, LU, LS, RS, LH, RS, LU
+      LS, W, LS, W, RS, W, RS, W, LS, LS, W, RS, RS, W, LS, RS, LS, W, LS, RS, LS, W, LS, RS, LS, RS, LS, RS, W, LS, RS, LS, RS, LS, RS, W, LS, RS, LH, RS, LU, W, LS, RS, LH, RS, LU, RU, LS, RH
     };
 
     int moveIndex;
+    int previewIndex = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -70,16 +71,6 @@ public class TargetSpawn : MonoBehaviour
 
       movingTargets = new List<GameObject>();
       SpawnTargets();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-      // UpdateTargetAndPreview();
-
-      // moveTimer -= Time.deltaTime;
-      // movingTargets.ForEach(t => t.transform.position = Vector3.MoveTowards(t.transform.position, leftEnd.position, 1.0f * Time.deltaTime));
-      // movingTarget.transform.position = Vector3.MoveTowards(movingTarget.transform.position, leftEnd.position, 1.0f * Time.deltaTime);
     }
 
     /// <summary> Parses move string and returns corresponding gameobject or null if not found </summary>
@@ -133,44 +124,45 @@ public class TargetSpawn : MonoBehaviour
       }
     }
 
-    void SpawnTargets() {
-      for (int i = 1; i < trackStep; i++) {
-        if (i >= moveList.Count) return;
+    void SpawnTargets(bool spawnSingle = false) {
+      int indexesMoved = 0;
+      int amountToSpawn = spawnSingle ? 2 : trackStep;
 
-        nextHitbox = parseMove(moveList[i]);
+      for (int i = 1; i < amountToSpawn; i++) {
+        if (i + previewIndex >= moveList.Count) return;
+
+        indexesMoved = i;
+        nextHitbox = parseMove(moveList[i + previewIndex]);
+
+        if (nextHitbox == null) break;
+
         bool isLeftSideTarget = nextHitbox.tag == "LeftTarget" ? true : false;
 
         Vector3 startPos = isLeftSideTarget ? leftStart.position : rightStart.position;
         Vector3 endPos = isLeftSideTarget ? leftEnd.position : rightEnd.position;
-
         GameObject target = Instantiate(previewPrefab, startPos, nextHitbox.transform.rotation);
 
-        // if (i == 0) {
-        //   target = Instantiate(targetPrefab, startPos, nextHitbox.transform.rotation);
-        // } else {
-        //   target = Instantiate(previewPrefab, startPos, nextHitbox.transform.rotation);
-        // }
-
         target.transform.SetParent(this.transform);
-        // target.transform.parent = this.transform; // move instantiated object inside TargetSpawn object
 
-        target.transform.position = Vector3.MoveTowards(target.transform.position, endPos, step * (trackStep - i)); 
+        if (!spawnSingle) {
+          target.transform.position = Vector3.MoveTowards(target.transform.position, endPos, step * (trackStep - i)); 
+        }
 
         movingTargets.Add(target);
-
-        // moveIndex += 1;
       }
 
-      // movingTargets.RemoveAt(0);
-      // moveIndex = 0;
+      previewIndex += indexesMoved;
+    }
+
+    IEnumerator SpawnTargetsWithDelay() {
+      yield return new WaitForSeconds(2);
+
+      SpawnTargets();
+      MoveTargets(); // Move targets once to activate hitbox and start the new combo
     }
 
     public void MoveTargets() {
       if (activeHitbox) activeHitbox.SetActive(false); // disable previous
-      Debug.Log("targets remaining: " + movingTargets.Count);
-      movingTargets.ForEach(target => 
-        target.transform.position = Vector3.MoveTowards(target.transform.position, target.tag == "LeftTarget" ? leftEnd.position : rightEnd.position, step)
-      );
 
       if (movingTargets.Count > 0) {
         GameObject preview = movingTargets[0];
@@ -178,9 +170,30 @@ public class TargetSpawn : MonoBehaviour
         Destroy(preview);
       }
 
+      // Spawn a target of the current combo
+      if (parseMove(moveList[previewIndex]) != null) {
+        SpawnTargets(true);
+      }
 
-      activeHitbox = parseMove(moveList[moveIndex + 1]);
-      if (activeHitbox) activeHitbox.SetActive(true);
+      Debug.Log("targets remaining: " + movingTargets.Count);
+
+      // Move targets
+      movingTargets.ForEach(target => 
+        target.transform.position = Vector3.MoveTowards(target.transform.position, target.tag == "LeftTarget" ? leftEnd.position : rightEnd.position, step)
+      );
+
+      // Enable new target
       moveIndex += 1;
+      if (moveIndex >= moveList.Count) return;
+
+      activeHitbox = parseMove(moveList[moveIndex]);
+      if (activeHitbox) {
+        activeHitbox.SetActive(true);
+      } else {
+        // wait a bit and spawn new combo set
+        StartCoroutine(SpawnTargetsWithDelay());
+      }
+
+      Debug.Log("moveIndex: " + moveIndex + " previewIndex: " + previewIndex);
     }
 }
